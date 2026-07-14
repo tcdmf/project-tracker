@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目进度管理 - Project Tracker</title>
+<style>
+/* ===== CSS Variables ===== */
+:root {
+  --primary: #e85d7a;
+  --primary-light: #f4849c;
+  --primary-dark: #cc4060;
+  --primary-bg: #ffeef2;
+  --success: #48b870;
+  --success-bg: #eafaf0;
+  --warning: #f09830;
+  --warning-bg: #fff6ea;
+  --danger: #e84848;
+  --danger-bg: #ffeeee;
+  --info: #5090c8;
+  --info-bg: #eaf2fa;
+  --gray-50: #faf8f6;
+  --gray-100: #f4f0ec;
+  --gray-200: #e8e2dc;
+  --gray-300: #d4ccc4;
+  --gray-400: #a8988c;
+  --gray-500: #8a7a6e;
+  --gray-600: #6b5c50;
+  --gray-700: #504438;
+  --gray-800: #352c24;
+  --gray-900: #1a1410;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
+  --shadow-sm: 0 1px 2px rgba(80,40,30,.04);
+  --shadow: 0 1px 3px rgba(80,40,30,.05), 0 1px 2px rgba(80,40,30,.03);
+  --shadow-md: 0 4px 8px rgba(80,40,30,.05), 0 2px 4px rgba(80,40,30,.03);
+  --shadow-lg: 0 8px 16px rgba(80,40,30,.06), 0 4px 6px rgba(80,40,30,.03);
+  --shadow-xl: 0 16px 24px rgba(80,40,30,.07), 0 8px 8px rgba(80,40,30,.03);
+  --transition: 0.25s cubic-bezier(.4,0,.2,1);
+}
+
+/* ===== Reset & Base ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  background:linear-gradient(170deg,#fff5f0 0%,#fff0f4 25%,#fff5f2 50%,#fff3ee 75%,#fef5f0 100%);
+  background-attachment:fixed;
+  color:var(--gray-800);
+  min-height:100vh;
+  line-height:1.6;
+}
+
+/* ===== Loading Screen ===== */
+.loading-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(170deg,#fff5f0 0%,#fff0f4 50%,#fff5f2 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .4s ease;
+}
+.loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-spinner{
+  width:44px;height:44px;border:3px solid var(--gray-200);
+  border-top-color:var(--primary);border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+.loading-text{margin-top:16px;font-size:15px;color:var(--gray-500);font-weight:500}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== Header ===== */
+.header{
+  background:rgba(255,255,255,.85);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--gray-200);
+  padding:0 24px;
+  height:64px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:100;
+  box-shadow:var(--shadow-sm);
+}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{
+  width:36px;height:36px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:18px;font-weight:700;
+}
+.header h1{font-size:18px;font-weight:700;color:var(--gray-900);letter-spacing:-0.3px}
+.header-actions{display:flex;align-items:center;gap:8px}
+
+/* ===== Buttons ===== */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:var(--radius-xs);
+  font-size:14px;font-weight:500;border:none;cursor:pointer;
+  transition:all var(--transition);white-space:nowrap;
+  font-family:inherit;letter-spacing:0.01em;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4)}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{filter:brightness(1.1)}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{filter:brightness(1.1)}
+.btn-outline{
+  background:transparent;border:1.5px solid var(--gray-300);color:var(--gray-700);
+}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-bg)}
+.btn-ghost{background:transparent;color:var(--gray-600);padding:8px 10px}
+.btn-ghost:hover{background:var(--gray-100);color:var(--gray-900)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:var(--radius-xs)}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:4px}
+.btn-icon{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-xs)}
+
+/* ===== View Toggle ===== */
+.view-toggle{display:flex;background:var(--gray-100);border-radius:var(--radius-xs);padding:3px;gap:2px}
+.view-toggle button{
+  padding:6px 14px;border:none;background:transparent;border-radius:6px;
+  font-size:13px;font-weight:500;cursor:pointer;color:var(--gray-500);
+  transition:all var(--transition);font-family:inherit;
+}
+.view-toggle button.active{background:#fff;color:var(--primary);box-shadow:var(--shadow-sm)}
+
+/* ===== Container ===== */
+.container{max-width:1320px;margin:0 auto;padding:24px}
+
+/* ===== Stats Bar ===== */
+.stats-bar{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat-card{
+  flex:1;min-width:140px;
+  background:rgba(255,255,255,.8);backdrop-filter:blur(10px);
+  border-radius:var(--radius);padding:16px 20px;
+  box-shadow:var(--shadow);border:1px solid var(--gray-100);
+  transition:all var(--transition);cursor:default;
+}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.stat-card .stat-value{font-size:28px;font-weight:800;letter-spacing:-0.5px;color:var(--gray-900)}
+.stat-card .stat-label{font-size:13px;color:var(--gray-500);margin-top:2px}
+.stat-card.accent-blue .stat-value{color:var(--info)}
+.stat-card.accent-green .stat-value{color:var(--success)}
+.stat-card.accent-amber .stat-value{color:var(--warning)}
+.stat-card.accent-red .stat-value{color:var(--danger)}
+.stat-card.accent-purple .stat-value{color:var(--primary)}
+
+/* ===== Toolbar ===== */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.search-box{flex:1;min-width:200px;position:relative}
+.search-box input{
+  width:100%;padding:10px 14px 10px 38px;
+  border:1.5px solid var(--gray-200);border-radius:var(--radius-xs);
+  font-size:14px;background:rgba(255,255,255,.7);
+  transition:all var(--transition);font-family:inherit;
+}
+.search-box input:focus{
+  outline:none;border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(99,102,241,.1);background:#fff;
+}
+.search-box .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400)}
+.filter-select{
+  padding:10px 14px;border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-xs);font-size:14px;
+  background:rgba(255,255,255,.7);color:var(--gray-700);
+  cursor:pointer;font-family:inherit;transition:all var(--transition);
+}
+.filter-select:focus{outline:none;border-color:var(--primary)}
+
+/* ===== Table View ===== */
+.table-wrap{
+  background:rgba(255,255,255,.8);backdrop-filter:blur(10px);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  border:1px solid var(--gray-100);overflow:hidden;
+}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:14px}
+.table-wrap thead{background:var(--gray-50);border-bottom:2px solid var(--gray-200)}
+.table-wrap th{
+  padding:12px 16px;text-align:left;font-weight:600;font-size:12px;
+  text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-500);
+  cursor:pointer;user-select:none;white-space:nowrap;transition:color var(--transition);
+}
+.table-wrap th:hover{color:var(--primary)}
+.table-wrap th .sort-icon{margin-left:4px;font-size:10px}
+.table-wrap td{padding:14px 16px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+.table-wrap tbody tr{transition:background var(--transition);cursor:pointer}
+.table-wrap tbody tr:hover{background:var(--gray-50)}
+.table-wrap tbody tr:last-child td{border-bottom:none}
+
+/* Status Badge */
+.status-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:0.02em;
+}
+.status-badge.planning{background:var(--info-bg);color:var(--info)}
+.status-badge.in-progress{background:var(--warning-bg);color:var(--warning)}
+.status-badge.completed{background:var(--success-bg);color:var(--success)}
+.status-badge.paused{background:var(--gray-100);color:var(--gray-500)}
+
+/* Progress Bar */
+.progress-mini{display:flex;align-items:center;gap:8px}
+.progress-mini .bar{flex:1;height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden;min-width:60px}
+.progress-mini .bar-fill{height:100%;border-radius:3px;transition:width .5s ease;background:linear-gradient(90deg,var(--primary),var(--primary-light))}
+.progress-mini .bar-fill.green{background:linear-gradient(90deg,var(--success),#6cc898)}
+.progress-mini .bar-fill.amber{background:linear-gradient(90deg,var(--warning),#f0b860)}
+.progress-mini .percent{font-size:12px;font-weight:600;color:var(--gray-600);min-width:36px;text-align:right}
+
+/* Reminder dot */
+.reminder-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;animation:pulse 2s infinite}
+.reminder-dot.urgent{background:var(--danger)}
+.reminder-dot.upcoming{background:var(--warning)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ===== Stats View ===== */
+.stats-view{display:none}
+.stats-view.active{display:block}
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:24px;margin-bottom:24px}
+.chart-card{
+  background:rgba(255,255,255,.8);backdrop-filter:blur(10px);
+  border-radius:var(--radius);padding:24px;
+  box-shadow:var(--shadow);border:1px solid var(--gray-100);
+}
+.chart-card h3{font-size:16px;font-weight:600;color:var(--gray-800);margin-bottom:16px}
+.chart-card canvas{display:block;width:100%}
+
+.milestone-timeline{
+  background:rgba(255,255,255,.8);backdrop-filter:blur(10px);
+  border-radius:var(--radius);padding:24px;
+  box-shadow:var(--shadow);border:1px solid var(--gray-100);
+}
+.milestone-timeline h3{font-size:16px;font-weight:600;margin-bottom:20px}
+.timeline-item{
+  display:flex;gap:16px;padding:12px 0;border-left:2px solid var(--gray-200);
+  padding-left:20px;position:relative;
+}
+.timeline-item::before{content:'';position:absolute;left:-5px;top:16px;width:8px;height:8px;border-radius:50%;background:var(--primary)}
+.timeline-item.overdue::before{background:var(--danger)}
+.timeline-item.done::before{background:var(--success)}
+.timeline-item .tl-date{font-size:12px;color:var(--gray-500);min-width:90px;font-weight:500}
+.timeline-item .tl-content{flex:1}
+.timeline-item .tl-name{font-weight:600;font-size:14px}
+.timeline-item .tl-project{font-size:12px;color:var(--gray-500)}
+.timeline-item.overdue .tl-date{color:var(--danger);font-weight:600}
+
+/* ===== Modal ===== */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);
+  backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:24px;
+}
+.modal-overlay.active{display:flex}
+.modal{
+  background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-xl);
+  width:100%;max-width:720px;max-height:85vh;overflow-y:auto;
+  animation:modalIn .25s ease;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px;border-bottom:1px solid var(--gray-100);
+  position:sticky;top:0;background:#fff;z-index:1;border-radius:var(--radius) var(--radius) 0 0;
+}
+.modal-header h2{font-size:18px;font-weight:700}
+.modal-body{padding:24px}
+.modal-footer{
+  display:flex;justify-content:flex-end;gap:8px;
+  padding:16px 24px;border-top:1px solid var(--gray-100);
+  position:sticky;bottom:0;background:#fff;border-radius:0 0 var(--radius) var(--radius);
+}
+
+/* Form */
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px}
+.form-group label .required{color:var(--danger);margin-left:2px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.form-input,.form-select,.form-textarea{
+  width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-xs);font-size:14px;font-family:inherit;
+  transition:all var(--transition);background:#faf8f6;color:var(--gray-800);
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.1);background:#fff;
+}
+.form-textarea{resize:vertical;min-height:70px}
+
+/* Rich Text Editor (备注贴图) */
+.form-editor{
+  min-height:80px;max-height:360px;overflow-y:auto;
+  line-height:1.7;white-space:pre-wrap;word-break:break-word;
+  cursor:text;
+}
+.form-editor:empty::before{content:'项目备注、关键信息等...（可直接粘贴图片 Ctrl+V）';color:var(--gray-400)}
+.form-editor img{max-width:100%;border-radius:8px;margin:6px 0;display:block;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.form-editor:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.1);background:#fff}
+.editor-toolbar{
+  display:flex;gap:4px;padding:4px 12px;background:var(--gray-50);
+  border:1.5px solid var(--gray-200);border-bottom:none;border-radius:var(--radius-xs) var(--radius-xs) 0 0;
+  font-size:11px;color:var(--gray-500);
+}
+.editor-toolbar span{display:inline-flex;align-items:center;gap:3px}
+.editor-wrapper{border-radius:var(--radius-xs);overflow:hidden}
+.editor-wrapper:focus-within{box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.editor-wrapper .form-editor{
+  border:1.5px solid var(--gray-200);border-top:none;
+  border-radius:0 0 var(--radius-xs) var(--radius-xs);
+  margin-top:0;
+}
+.editor-wrapper:focus-within .form-editor{border-color:var(--primary)}
+.editor-wrapper:focus-within .editor-toolbar{border-color:var(--primary)}
+
+/* Dynamic List Items */
+.dynamic-list{margin-top:8px}
+.dynamic-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.dynamic-item input{
+  flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-xs);font-size:13px;font-family:inherit;background:#faf8f6;
+}
+.dynamic-item input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.dynamic-item .remove-btn{
+  width:28px;height:28px;border:none;background:transparent;color:var(--gray-400);
+  cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;transition:all var(--transition);
+}
+.dynamic-item .remove-btn:hover{background:var(--danger-bg);color:var(--danger)}
+.add-item-btn{
+  display:inline-flex;align-items:center;gap:4px;padding:6px 12px;
+  border:1.5px dashed var(--gray-300);background:transparent;
+  border-radius:var(--radius-xs);font-size:12px;color:var(--gray-500);
+  cursor:pointer;font-family:inherit;transition:all var(--transition);
+}
+.add-item-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-bg)}
+
+/* ===== Reminder Panel ===== */
+.reminder-panel{
+  display:none;position:fixed;top:72px;right:24px;width:360px;max-height:480px;
+  overflow-y:auto;background:#fff;border-radius:var(--radius);
+  box-shadow:var(--shadow-xl);border:1px solid var(--gray-100);z-index:150;
+  animation:slideDown .2s ease;
+}
+.reminder-panel.active{display:block}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.reminder-panel .rp-header{
+  padding:16px;border-bottom:1px solid var(--gray-100);
+  font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:space-between;
+}
+.reminder-item{padding:12px 16px;border-bottom:1px solid var(--gray-50);font-size:13px;cursor:default;transition:background var(--transition)}
+.reminder-item:hover{background:var(--gray-50)}
+.reminder-item .ri-title{font-weight:600;margin-bottom:2px}
+.reminder-item .ri-meta{font-size:12px;color:var(--gray-500)}
+.reminder-item.urgent{border-left:3px solid var(--danger)}
+.reminder-item.upcoming{border-left:3px solid var(--warning)}
+.rp-badge{
+  position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;
+  font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;padding:0 4px;
+}
+
+/* ===== Toast ===== */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{
+  padding:12px 20px;border-radius:var(--radius-xs);color:#fff;font-size:14px;
+  font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn .3s ease;max-width:380px;
+}
+.toast.success{background:var(--success)}
+.toast.error{background:var(--danger)}
+.toast.info{background:var(--info)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ===== Empty State ===== */
+.empty-state{text-align:center;padding:60px 20px;color:var(--gray-400)}
+.empty-state .empty-icon{font-size:56px;margin-bottom:16px}
+.empty-state h3{font-size:16px;color:var(--gray-600);margin-bottom:4px}
+.empty-state p{font-size:14px}
+
+/* ===== Confirm Dialog ===== */
+.confirm-overlay{
+  display:none;position:fixed;inset:0;z-index:250;background:rgba(15,23,42,.4);
+  align-items:center;justify-content:center;
+}
+.confirm-overlay.active{display:flex}
+.confirm-dialog{
+  background:#fff;border-radius:var(--radius);padding:24px;
+  box-shadow:var(--shadow-xl);max-width:400px;text-align:center;animation:modalIn .25s ease;
+}
+.confirm-dialog p{margin-bottom:20px;font-size:15px;color:var(--gray-700)}
+
+/* ===== Detail Panel (右侧滑出) ===== */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.3);z-index:170;transition:opacity .3s}
+.detail-overlay.active{display:block}
+.detail-panel{
+  position:fixed;top:0;right:0;width:540px;max-width:100vw;height:100vh;
+  background:#fff;z-index:175;box-shadow:var(--shadow-xl);
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.detail-panel.active{transform:translateX(0)}
+.detail-panel-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  padding:24px 24px 16px;border-bottom:1px solid var(--gray-100);
+  flex-shrink:0;
+}
+.detail-panel-header .dp-title{flex:1;min-width:0}
+.detail-panel-header .dp-brand{font-size:13px;color:var(--primary);font-weight:600;margin-bottom:2px}
+.detail-panel-header .dp-name{font-size:20px;font-weight:700;color:var(--gray-900);word-break:break-word}
+.detail-panel-body{flex:1;overflow-y:auto;padding:20px 24px}
+.detail-panel-body .dp-section{margin-bottom:24px}
+.detail-panel-body .dp-section-title{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+  color:var(--gray-400);margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.detail-panel-body .dp-section-title::after{content:'';flex:1;height:1px;background:var(--gray-100)}
+.dp-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dp-info-item{background:var(--gray-50);padding:10px 14px;border-radius:var(--radius-xs)}
+.dp-info-item .dp-info-label{font-size:11px;color:var(--gray-400);margin-bottom:2px}
+.dp-info-item .dp-info-value{font-size:14px;font-weight:500;color:var(--gray-800)}
+.dp-notes-box{
+  background:linear-gradient(135deg,#fff8f2,#fff0e8);border:1px solid #f0c8a8;
+  border-radius:var(--radius-sm);padding:14px 16px;
+  font-size:14px;color:var(--gray-700);line-height:1.7;white-space:pre-wrap;word-break:break-word;
+  min-height:40px;
+}
+.dp-notes-box img{max-width:100%;border-radius:8px;margin:8px 0;display:block;box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .2s}
+.dp-notes-box img:hover{transform:scale(1.02)}
+.dp-notes-box:empty::before{content:'暂无备注';color:var(--gray-400);font-style:italic}
+.dp-todo-item{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:4px;
+  background:var(--gray-50);border-radius:var(--radius-xs);transition:all var(--transition);
+}
+.dp-todo-item:hover{background:var(--gray-100)}
+.dp-todo-item.done{opacity:.6}
+.dp-todo-item.done .dp-todo-text{text-decoration:line-through;color:var(--gray-400)}
+.dp-todo-item .dp-todo-check{width:18px;height:18px;cursor:pointer;accent-color:var(--primary)}
+.dp-todo-item .dp-todo-text{flex:1;font-size:14px}
+.dp-ms-item{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:4px;
+  background:var(--gray-50);border-radius:var(--radius-xs);transition:all var(--transition);
+  border-left:3px solid transparent;
+}
+.dp-ms-item.overdue{border-left-color:var(--danger);background:var(--danger-bg)}
+.dp-ms-item.done{opacity:.6;border-left-color:var(--success)}
+.dp-ms-item .dp-ms-check{width:18px;height:18px;cursor:pointer;accent-color:var(--primary);flex-shrink:0}
+.dp-ms-item .dp-ms-date{font-size:11px;color:var(--gray-500);min-width:80px;flex-shrink:0}
+.dp-ms-item .dp-ms-name{flex:1;font-size:14px;font-weight:500}
+.dp-ms-item.overdue .dp-ms-date{color:var(--danger);font-weight:600}
+.dp-empty{text-align:center;padding:20px;color:var(--gray-400);font-size:13px}
+.detail-panel-footer{
+  display:flex;gap:8px;padding:12px 24px;border-top:1px solid var(--gray-100);flex-shrink:0;
+}
+.dp-progress-bar{height:8px;background:var(--gray-200);border-radius:4px;overflow:hidden;margin-top:8px}
+.dp-progress-bar .dp-progress-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+/* ===== Responsive ===== */
+@media(max-width:768px){
+  .container{padding:16px}
+  .form-row,.form-row-3{grid-template-columns:1fr}
+  .charts-grid{grid-template-columns:1fr}
+  .header{padding:0 16px}
+  .header h1{font-size:16px}
+  .toolbar{flex-direction:column;align-items:stretch}
+  .reminder-panel{right:8px;width:calc(100vw - 16px);max-width:360px}
+  .detail-panel{width:100vw}
+  .stats-bar{gap:8px}
+  .stat-card{padding:12px 14px}
+  .stat-card .stat-value{font-size:22px}
+  .table-wrap{overflow-x:auto}
+}
+
+/* ===== Print ===== */
+@media print{
+  .header,.toolbar,.btn,.modal-overlay,.confirm-overlay,.toast-container,.reminder-panel,.detail-overlay,.detail-panel{display:none!important}
+  .table-wrap{box-shadow:none;border:1px solid #ddd}
+  .container{padding:0}
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--gray-400)}
+</style>
+</head>
+<body>
+
+<!-- ===== Loading Screen ===== -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">正在加载项目数据...</div>
+</div>
+
+<!-- ===== Header ===== -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">📊</div>
+    <h1>项目进度管理</h1>
+  </div>
+  <div class="header-actions">
+    <div class="view-toggle" id="viewToggle">
+      <button data-view="table" class="active">📋 表格</button>
+      <button data-view="stats">📈 统计</button>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="handleImport()" title="导入 JSON">📥 导入</button>
+    <button class="btn btn-outline btn-sm" onclick="exportJSON()" title="导出 JSON">📤 导出</button>
+    <button class="btn btn-outline btn-sm" onclick="exportXLSX()" title="导出 Excel (.xlsx)">📊 Excel</button>
+    <div style="position:relative">
+      <button class="btn btn-outline btn-sm btn-icon" onclick="toggleReminderPanel()" title="提醒" id="reminderBtn">🔔</button>
+      <span class="rp-badge" id="reminderBadge" style="display:none">0</span>
+    </div>
+    <button class="btn btn-primary" onclick="openProjectModal()">+ 新建项目</button>
+  </div>
+</header>
+
+<!-- ===== Reminder Panel ===== -->
+<div class="reminder-panel" id="reminderPanel"></div>
+
+<!-- ===== Project Detail Panel (右侧滑出) ===== -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeProjectDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-panel-header">
+    <div class="dp-title">
+      <div class="dp-brand" id="dpBrand"></div>
+      <div class="dp-name" id="dpName"></div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+        <span id="dpStatus"></span>
+        <span style="font-size:13px;color:var(--gray-500)" id="dpProgressText"></span>
+      </div>
+      <div class="dp-progress-bar"><div class="dp-progress-fill" id="dpProgressFill" style="width:0%;background:var(--primary)"></div></div>
+    </div>
+    <button class="btn btn-ghost btn-icon" onclick="closeProjectDetail()" style="flex-shrink:0">✕</button>
+  </div>
+  <div class="detail-panel-body">
+    <!-- 基本信息 -->
+    <div class="dp-section">
+      <div class="dp-section-title">📋 基本信息</div>
+      <div class="dp-info-grid" id="dpInfoGrid"></div>
+    </div>
+    <!-- 备注 -->
+    <div class="dp-section">
+      <div class="dp-section-title">📝 备注</div>
+      <div class="dp-notes-box" id="dpNotes"></div>
+    </div>
+    <!-- 待办事项 -->
+    <div class="dp-section">
+      <div class="dp-section-title">✅ 待办事项 <span style="font-weight:400;font-size:11px" id="dpTodoCount"></span></div>
+      <div id="dpTodoList"></div>
+    </div>
+    <!-- 里程碑 -->
+    <div class="dp-section">
+      <div class="dp-section-title">🏁 里程碑 / 时间节点</div>
+      <div id="dpMilestoneList"></div>
+    </div>
+  </div>
+  <div class="detail-panel-footer">
+    <button class="btn btn-outline btn-sm" onclick="duplicateProject(currentDetailId())" style="margin-right:auto">📋 复制</button>
+    <button class="btn btn-outline btn-sm" onclick="confirmDeleteFromDetail()" style="color:var(--danger)">🗑️ 删除</button>
+    <button class="btn btn-primary btn-sm" onclick="editProjectFromDetail()">✏️ 编辑项目</button>
+  </div>
+</div>
+
+<!-- ===== Main Content ===== -->
+<div class="container">
+  <!-- Stats Bar -->
+  <div class="stats-bar" id="statsBar"></div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="搜索项目名称、品牌、对接人..." id="searchInput" oninput="renderView()">
+    </div>
+    <select class="filter-select" id="statusFilter" onchange="renderView()">
+      <option value="all">全部状态</option>
+      <option value="planning">📋 规划中</option>
+      <option value="in-progress">🔄 进行中</option>
+      <option value="completed">✅ 已完成</option>
+      <option value="paused">⏸️ 已暂停</option>
+    </select>
+    <select class="filter-select" id="sortBy" onchange="renderView()">
+      <option value="updatedAt">最近更新</option>
+      <option value="createdAt">创建时间</option>
+      <option value="name">项目名称</option>
+      <option value="endDate">截止日期</option>
+      <option value="progress">进度</option>
+    </select>
+  </div>
+
+  <!-- Table View -->
+  <div class="table-wrap" id="tableView">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px"></th>
+          <th>项目品牌</th>
+          <th>项目名称</th>
+          <th>状态</th>
+          <th>进度</th>
+          <th>客户对接人</th>
+          <th>截止日期</th>
+          <th style="width:120px">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty-state" id="tableEmpty">
+      <div class="empty-icon">📭</div>
+      <h3>还没有项目</h3>
+      <p>点击"新建项目"开始追踪你的项目进度吧</p>
+    </div>
+  </div>
+
+  <!-- Stats View -->
+  <div class="stats-view" id="statsView">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>项目状态分布</h3>
+        <canvas id="statusChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>项目进度概览</h3>
+        <canvas id="progressChart"></canvas>
+      </div>
+    </div>
+    <div class="milestone-timeline" id="milestoneTimeline">
+      <h3>📅 即将到来的里程碑</h3>
+      <div id="timelineContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Project Modal ===== -->
+<div class="modal-overlay" id="projectModalOverlay">
+  <div class="modal" id="projectModal">
+    <div class="modal-header">
+      <h2 id="modalTitle">新建项目</h2>
+      <button class="btn btn-ghost btn-icon" onclick="closeProjectModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="projectForm" onsubmit="return false">
+        <input type="hidden" id="projectId">
+        <div class="form-row">
+          <div class="form-group">
+            <label>项目品牌 <span class="required">*</span></label>
+            <input class="form-input" id="brand" placeholder="例如：Nike / Apple / 华为" required>
+          </div>
+          <div class="form-group">
+            <label>项目名称 <span class="required">*</span></label>
+            <input class="form-input" id="name" placeholder="例如：Q3 新品上市活动" required>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>状态 <span class="required">*</span></label>
+            <select class="form-select" id="status">
+              <option value="planning">📋 规划中</option>
+              <option value="in-progress">🔄 进行中</option>
+              <option value="completed">✅ 已完成</option>
+              <option value="paused">⏸️ 已暂停</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>开始日期</label>
+            <input class="form-input" type="date" id="startDate">
+          </div>
+          <div class="form-group">
+            <label>截止日期</label>
+            <input class="form-input" type="date" id="endDate">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>客户对接人</label>
+          <input class="form-input" id="clientContact" placeholder="姓名 / 职位 / 联系方式">
+        </div>
+
+        <!-- Todos -->
+        <div class="form-group">
+          <label>📝 待办事项</label>
+          <div class="dynamic-list" id="todoList"></div>
+          <button type="button" class="add-item-btn" onclick="addTodoItem()">+ 添加待办</button>
+        </div>
+
+        <!-- Milestones -->
+        <div class="form-group">
+          <label>🏁 里程碑 / 时间节点</label>
+          <div class="dynamic-list" id="milestoneList"></div>
+          <button type="button" class="add-item-btn" onclick="addMilestoneItem()">+ 添加里程碑</button>
+        </div>
+
+        <div class="form-group">
+          <label>备注 <span style="font-weight:400;font-size:11px;color:var(--gray-400)">（支持粘贴图片 Ctrl+V）</span></label>
+          <div class="editor-wrapper">
+            <div class="editor-toolbar"><span>🖼️ 可直接粘贴截图</span></div>
+            <div class="form-textarea form-editor" id="notes" contenteditable="true"></div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeProjectModal()">取消</button>
+      <button class="btn btn-danger" id="modalDeleteBtn" style="display:none;margin-right:auto" onclick="deleteProjectFromModal()">删除项目</button>
+      <button class="btn btn-primary" onclick="saveProject()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Confirm Dialog ===== -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-dialog">
+    <p id="confirmMsg">确定要删除吗？</p>
+    <button class="btn btn-outline" onclick="closeConfirm()">取消</button>
+    <button class="btn btn-danger" id="confirmBtn" style="margin-left:8px">确认删除</button>
+  </div>
+</div>
+
+<!-- ===== Toast Container ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Hidden file input -->
+<input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleFileImport(event)">
+
+<script>
+/* ========================================================
+   Project Tracker - 项目进度管理应用 (零外部依赖)
+   ======================================================== */
+
+// ===== Data Layer =====
+var STORAGE_KEY = 'project-tracker-data';
+var REMINDER_DISMISS_KEY = 'project-tracker-dismissed';
+
+function loadProjects() {
+  try { var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e) { return []; }
+}
+function saveProjects(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+function generateId() { return 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7); }
+
+// ===== State =====
+var projects = loadProjects();
+var currentView = 'table';
+var editingId = null;
+var selectedProjectId = null;
+
+// ===== Toast =====
+function showToast(msg, type) {
+  type = type || 'info';
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity .3s'; }, 2500);
+  setTimeout(function(){ t.remove(); }, 2800);
+}
+
+// ===== Confirm =====
+var confirmCallback = null;
+function showConfirm(msg, cb) {
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmOverlay').classList.add('active');
+  confirmCallback = cb;
+}
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('active');
+  confirmCallback = null;
+}
+document.getElementById('confirmBtn').addEventListener('click', function(){
+  if (confirmCallback) confirmCallback();
+  closeConfirm();
+});
+
+// ===== Progress =====
+function calcProgress(p) {
+  var todos = p.todos || [];
+  var ms = p.milestones || [];
+  if (todos.length === 0 && ms.length === 0) return p.status === 'completed' ? 100 : 0;
+  if (todos.length > 0) {
+    var done = 0; for (var i=0; i<todos.length; i++) { if (todos[i].completed) done++; }
+    return Math.round((done / todos.length) * 100);
+  }
+  var doneMs = 0; for (var i=0; i<ms.length; i++) { if (ms[i].completed) doneMs++; }
+  return Math.round((doneMs / ms.length) * 100);
+}
+function getProgressClass(pct) {
+  if (pct >= 80) return 'green';
+  if (pct >= 40) return '';
+  return 'amber';
+}
+
+// ===== Reminders =====
+function getUpcomingMilestones() {
+  var now = new Date(); now.setHours(0,0,0,0);
+  var threeDays = new Date(now); threeDays.setDate(threeDays.getDate() + 3);
+  var reminders = [];
+  for (var i=0; i<projects.length; i++) {
+    var p = projects[i];
+    if (p.status === 'completed') continue;
+    var milestones = p.milestones || [];
+    for (var j=0; j<milestones.length; j++) {
+      var m = milestones[j];
+      if (m.completed || !m.date) continue;
+      var d = new Date(m.date); d.setHours(0,0,0,0);
+      if (d < now || (d >= now && d <= threeDays)) {
+        reminders.push({
+          projectId: p.id, projectName: p.name, brand: p.brand,
+          milestoneName: m.name, date: m.date,
+          isOverdue: d < now,
+          key: p.id + '_' + m.name + '_' + m.date
+        });
+      }
+    }
+    if (p.endDate && p.status !== 'completed') {
+      var ed = new Date(p.endDate); ed.setHours(0,0,0,0);
+      if (ed < now || (ed >= now && ed <= threeDays)) {
+        reminders.push({
+          projectId: p.id, projectName: p.name, brand: p.brand,
+          milestoneName: '项目截止日期', date: p.endDate,
+          isOverdue: ed < now,
+          key: p.id + '_enddate'
+        });
+      }
+    }
+  }
+  return reminders;
+}
+function getDismissed() {
+  try { return JSON.parse(localStorage.getItem(REMINDER_DISMISS_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+function updateReminderBadge() {
+  var dismissed = getDismissed();
+  var all = getUpcomingMilestones();
+  var active = []; for (var i=0; i<all.length; i++) { if (!dismissed[all[i].key]) active.push(all[i]); }
+  var badge = document.getElementById('reminderBadge');
+  if (active.length > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = active.length > 99 ? '99+' : active.length;
+  } else { badge.style.display = 'none'; }
+}
+function toggleReminderPanel() {
+  var panel = document.getElementById('reminderPanel');
+  if (panel.classList.contains('active')) { panel.classList.remove('active'); return; }
+  renderReminderPanel(); panel.classList.add('active');
+}
+function renderReminderPanel() {
+  var panel = document.getElementById('reminderPanel');
+  var dismissed = getDismissed();
+  var all = getUpcomingMilestones();
+  var active = []; for (var i=0; i<all.length; i++) { if (!dismissed[all[i].key]) active.push(all[i]); }
+
+  var html = '<div class="rp-header"><span>🔔 提醒 (' + active.length + ')</span>';
+  if (active.length > 0) html += '<button class="btn btn-xs btn-outline" onclick="dismissAllReminders()">全部忽略</button>';
+  html += '</div>';
+  if (active.length === 0) {
+    html += '<div style="padding:32px;text-align:center;color:var(--gray-400)">✨ 暂无提醒，一切顺利！</div>';
+  } else {
+    for (var i=0; i<active.length; i++) {
+      var r = active[i];
+      html += '<div class="reminder-item ' + (r.isOverdue ? 'urgent' : 'upcoming') + '">';
+      html += '<div class="ri-title">' + (r.isOverdue ? '🔴' : '🟡') + ' ' + escHtml(r.milestoneName) + '</div>';
+      html += '<div class="ri-meta">' + escHtml(r.brand) + ' · ' + escHtml(r.projectName) + ' · ' + r.date + '</div>';
+      html += '<div style="margin-top:6px;display:flex;gap:8px">';
+      html += '<button class="btn btn-xs btn-outline" onclick="dismissReminder(\'' + r.key + '\')">忽略</button>';
+      html += '<button class="btn btn-xs btn-primary" onclick="editProjectById(\'' + r.projectId + '\');toggleReminderPanel()">查看项目</button>';
+      html += '</div></div>';
+    }
+  }
+  panel.innerHTML = html;
+}
+function dismissReminder(key) {
+  var d = getDismissed(); d[key] = Date.now();
+  localStorage.setItem(REMINDER_DISMISS_KEY, JSON.stringify(d));
+  renderReminderPanel(); updateReminderBadge();
+}
+function dismissAllReminders() {
+  var d = getDismissed();
+  var all = getUpcomingMilestones();
+  for (var i=0; i<all.length; i++) { d[all[i].key] = Date.now(); }
+  localStorage.setItem(REMINDER_DISMISS_KEY, JSON.stringify(d));
+  renderReminderPanel(); updateReminderBadge();
+}
+document.addEventListener('click', function(e) {
+  var panel = document.getElementById('reminderPanel');
+  var btn = document.getElementById('reminderBtn');
+  if (!panel.classList.contains('active')) return;
+  if (!panel.contains(e.target) && !btn.contains(e.target)) panel.classList.remove('active');
+});
+
+// ===== Filtered Projects =====
+function getFilteredProjects() {
+  var search = (document.getElementById('searchInput').value || '').toLowerCase();
+  var statusFilter = document.getElementById('statusFilter').value;
+  var sortBy = document.getElementById('sortBy').value;
+  var filtered = [];
+  for (var i=0; i<projects.length; i++) {
+    var p = projects[i];
+    if (search && (p.name||'').toLowerCase().indexOf(search)===-1 && (p.brand||'').toLowerCase().indexOf(search)===-1 && (p.clientContact||'').toLowerCase().indexOf(search)===-1) continue;
+    if (statusFilter !== 'all' && p.status !== statusFilter) continue;
+    filtered.push(p);
+  }
+  filtered.sort(function(a,b){
+    switch(sortBy){
+      case 'name': return (a.name||'').localeCompare(b.name||'', 'zh');
+      case 'endDate': return (a.endDate||'').localeCompare(b.endDate||'');
+      case 'progress': return calcProgress(b) - calcProgress(a);
+      case 'createdAt': return (b.createdAt||'').localeCompare(a.createdAt||'');
+      default: return (b.updatedAt||'').localeCompare(a.updatedAt||'');
+    }
+  });
+  return filtered;
+}
+
+// ===== Render Stats Bar =====
+function renderStatsBar() {
+  var total = projects.length;
+  var inProg = 0, completed = 0, planning = 0, paused = 0;
+  for (var i=0; i<projects.length; i++) {
+    switch(projects[i].status) {
+      case 'in-progress': inProg++; break;
+      case 'completed': completed++; break;
+      case 'planning': planning++; break;
+      case 'paused': paused++; break;
+    }
+  }
+  document.getElementById('statsBar').innerHTML =
+    '<div class="stat-card accent-blue"><div class="stat-value">'+total+'</div><div class="stat-label">全部项目</div></div>'+
+    '<div class="stat-card accent-amber"><div class="stat-value">'+inProg+'</div><div class="stat-label">进行中</div></div>'+
+    '<div class="stat-card accent-green"><div class="stat-value">'+completed+'</div><div class="stat-label">已完成</div></div>'+
+    '<div class="stat-card accent-blue"><div class="stat-value">'+planning+'</div><div class="stat-label">规划中</div></div>'+
+    '<div class="stat-card"><div class="stat-value">'+paused+'</div><div class="stat-label">已暂停</div></div>';
+}
+
+// ===== Render Table View =====
+function renderTableView() {
+  var filtered = getFilteredProjects();
+  var tbody = document.getElementById('tableBody');
+  var empty = document.getElementById('tableEmpty');
+  if (filtered.length === 0) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  var statusLabels = {planning:'规划中','in-progress':'进行中',completed:'已完成',paused:'已暂停'};
+  var now = new Date(); now.setHours(0,0,0,0);
+  var threeDays = new Date(now); threeDays.setDate(threeDays.getDate()+3);
+  var html = '';
+  for (var i=0; i<filtered.length; i++) {
+    var p = filtered[i];
+    var progress = calcProgress(p);
+    var pc = getProgressClass(progress);
+    var isActive = selectedProjectId === p.id;
+
+    var hasUrgent = false, hasUpcoming = false;
+    var ms = p.milestones || [];
+    for (var j=0; j<ms.length; j++) {
+      if (ms[j].completed || !ms[j].date) continue;
+      var md = new Date(ms[j].date); md.setHours(0,0,0,0);
+      if (md < now) hasUrgent = true; else if (md <= threeDays) hasUpcoming = true;
+    }
+    if (p.endDate && p.status !== 'completed') {
+      var ed = new Date(p.endDate); ed.setHours(0,0,0,0);
+      if (ed < now) hasUrgent = true; else if (ed <= threeDays) hasUpcoming = true;
+    }
+    var reminderHtml = '';
+    if (hasUrgent) reminderHtml = '<span class="reminder-dot urgent" title="有逾期项"></span>';
+    else if (hasUpcoming) reminderHtml = '<span class="reminder-dot upcoming" title="有即将到期项"></span>';
+
+    var notesCount = (p.notes && p.notes.trim()) ? ' 📝' : '';
+    var todoCount = (p.todos||[]).length;
+    var msCount = (p.milestones||[]).length;
+    var subInfo = '';
+    if (todoCount > 0 || msCount > 0) {
+      subInfo = '<div style="font-size:11px;color:var(--gray-400);margin-top:1px">';
+      if (todoCount > 0) subInfo += todoCount + ' 个待办';
+      if (msCount > 0) subInfo += (todoCount>0?' · ':'') + msCount + ' 个里程碑';
+      subInfo += notesCount + '</div>';
+    } else if (notesCount) {
+      subInfo = '<div style="font-size:11px;color:var(--gray-400);margin-top:1px">有备注</div>';
+    }
+
+    html += '<tr onclick="openProjectDetail(\''+p.id+'\')" style="cursor:pointer;'+(isActive?'background:var(--primary-bg)':'')+'">';
+    html += '<td>'+reminderHtml+'</td>';
+    html += '<td><span style="font-weight:600;color:var(--primary)">'+escHtml(p.brand||'-')+'</span></td>';
+    html += '<td><strong>'+escHtml(p.name||'-')+'</strong>'+subInfo+'</td>';
+    html += '<td><span class="status-badge '+p.status+'">'+(statusLabels[p.status]||p.status)+'</span></td>';
+    html += '<td><div class="progress-mini"><div class="bar"><div class="bar-fill '+pc+'" style="width:'+progress+'%"></div></div><span class="percent">'+progress+'%</span></div></td>';
+    html += '<td>'+escHtml(p.clientContact||'-')+'</td>';
+    html += '<td style="font-size:13px">'+(p.endDate||'-')+'</td>';
+    html += '<td onclick="event.stopPropagation()">';
+    html += '<button class="btn btn-ghost btn-xs" onclick="editProjectById(\''+p.id+'\')" title="编辑">✏️</button>';
+    html += '<button class="btn btn-ghost btn-xs" onclick="duplicateProject(\''+p.id+'\')" title="复制">📋</button>';
+    html += '<button class="btn btn-ghost btn-xs" onclick="confirmDelete(\''+p.id+'\')" title="删除" style="color:var(--danger)">🗑️</button>';
+    html += '</td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+// ===== Project Detail Panel =====
+function openProjectDetail(id) {
+  selectedProjectId = id;
+  renderProjectDetail(id);
+  document.getElementById('detailOverlay').classList.add('active');
+  document.getElementById('detailPanel').classList.add('active');
+  renderTableView(); // highlight active row
+}
+
+function closeProjectDetail() {
+  selectedProjectId = null;
+  document.getElementById('detailOverlay').classList.remove('active');
+  document.getElementById('detailPanel').classList.remove('active');
+  renderTableView();
+}
+
+function currentDetailId() { return selectedProjectId; }
+
+function editProjectFromDetail() {
+  if (selectedProjectId) { var id = selectedProjectId; closeProjectDetail(); openProjectModal(id); }
+}
+
+function confirmDeleteFromDetail() {
+  if (selectedProjectId) confirmDelete(selectedProjectId);
+}
+
+function renderProjectDetail(id) {
+  var p = findProject(id);
+  if (!p) return;
+
+  var statusLabels = {planning:'规划中','in-progress':'进行中',completed:'已完成',paused:'已暂停'};
+  var progress = calcProgress(p);
+  var pc = getProgressClass(progress);
+
+  // Header
+  document.getElementById('dpBrand').textContent = p.brand || '';
+  document.getElementById('dpName').textContent = p.name || '';
+  var statusHtml = '<span class="status-badge '+p.status+'">'+(statusLabels[p.status]||p.status)+'</span>';
+  document.getElementById('dpStatus').innerHTML = statusHtml;
+  document.getElementById('dpProgressText').textContent = progress + '% 完成';
+  var fill = document.getElementById('dpProgressFill');
+  fill.style.width = progress + '%';
+  fill.style.background = progress >= 80 ? 'linear-gradient(90deg,var(--success),#6cc898)' :
+                          progress >= 40 ? 'linear-gradient(90deg,var(--primary),var(--primary-light))' :
+                          'linear-gradient(90deg,var(--warning),#f0b860)';
+
+  // Info grid
+  var infoHtml = '';
+  infoHtml += '<div class="dp-info-item"><div class="dp-info-label">开始日期</div><div class="dp-info-value">'+(p.startDate||'未设置')+'</div></div>';
+  infoHtml += '<div class="dp-info-item"><div class="dp-info-label">截止日期</div><div class="dp-info-value">'+(p.endDate||'未设置')+'</div></div>';
+  infoHtml += '<div class="dp-info-item"><div class="dp-info-label">客户对接人</div><div class="dp-info-value">'+(p.clientContact||'未设置')+'</div></div>';
+  infoHtml += '<div class="dp-info-item"><div class="dp-info-label">创建时间</div><div class="dp-info-value" style="font-size:12px">'+fmtDate(p.createdAt)+'</div></div>';
+  document.getElementById('dpInfoGrid').innerHTML = infoHtml;
+
+  // Notes
+  document.getElementById('dpNotes').innerHTML = p.notes || '';
+
+  // Todos
+  var todos = p.todos || [];
+  var todoDone = 0;
+  for (var i=0; i<todos.length; i++) { if (todos[i].completed) todoDone++; }
+  document.getElementById('dpTodoCount').textContent = todos.length > 0 ? '(' + todoDone + '/' + todos.length + ')' : '';
+
+  var todoHtml = '';
+  if (todos.length === 0) {
+    todoHtml = '<div class="dp-empty">暂无待办事项</div>';
+  } else {
+    for (var j=0; j<todos.length; j++) {
+      var t = todos[j];
+      todoHtml += '<div class="dp-todo-item '+(t.completed?'done':'')+'">';
+      todoHtml += '<input type="checkbox" class="dp-todo-check" '+(t.completed?'checked':'')+' onchange="dpToggleTodo(\''+p.id+'\',\''+t.id+'\',this.checked)">';
+      todoHtml += '<span class="dp-todo-text">'+escHtml(t.text)+'</span>';
+      todoHtml += '</div>';
+    }
+  }
+  document.getElementById('dpTodoList').innerHTML = todoHtml;
+
+  // Milestones
+  var milestones = p.milestones || [];
+  var msHtml = '';
+  if (milestones.length === 0) {
+    msHtml = '<div class="dp-empty">暂无里程碑</div>';
+  } else {
+    for (var k=0; k<milestones.length; k++) {
+      var m = milestones[k];
+      var msDate = m.date ? new Date(m.date) : null;
+      if (msDate) msDate.setHours(0,0,0,0);
+      var isOverdue = msDate && msDate < new Date() && !m.completed;
+      msHtml += '<div class="dp-ms-item '+(isOverdue?'overdue':'')+' '+(m.completed?'done':'')+'">';
+      msHtml += '<input type="checkbox" class="dp-ms-check" '+(m.completed?'checked':'')+' onchange="dpToggleMs(\''+p.id+'\',\''+m.id+'\',this.checked)">';
+      msHtml += '<span class="dp-ms-date">'+(m.date||'未设日期')+'</span>';
+      msHtml += '<span class="dp-ms-name">'+escHtml(m.name)+(isOverdue?' ⚠️':'')+'</span>';
+      msHtml += '</div>';
+    }
+  }
+  document.getElementById('dpMilestoneList').innerHTML = msHtml;
+}
+
+function dpToggleTodo(pid, tid, checked) {
+  var p = findProject(pid); if (!p) return;
+  var todos = p.todos || [];
+  for (var i=0; i<todos.length; i++) { if (todos[i].id===tid) { todos[i].completed=checked; break; } }
+  p.updatedAt = new Date().toISOString();
+  saveProjects(projects);
+  renderProjectDetail(pid);
+  renderTableView();
+  updateReminderBadge();
+}
+
+function dpToggleMs(pid, mid, checked) {
+  var p = findProject(pid); if (!p) return;
+  var ms = p.milestones || [];
+  for (var i=0; i<ms.length; i++) { if (ms[i].id===mid) { ms[i].completed=checked; break; } }
+  p.updatedAt = new Date().toISOString();
+  saveProjects(projects);
+  renderProjectDetail(pid);
+  renderTableView();
+  updateReminderBadge();
+}
+
+function fmtDate(iso) {
+  if (!iso) return '-';
+  try { var d=new Date(iso); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes()); }
+  catch(e) { return '-'; }
+}
+function pad(n) { return n<10?'0'+n:''+n; }
+
+function toggleTodo(pid, tid, checked) {
+  var p = findProject(pid); if (!p) return;
+  var todos = p.todos || [];
+  for (var i=0; i<todos.length; i++) { if (todos[i].id===tid) { todos[i].completed=checked; break; } }
+  p.updatedAt = new Date().toISOString();
+  saveProjects(projects); renderAll(); updateReminderBadge();
+}
+function toggleMilestone(pid, mid, checked) {
+  var p = findProject(pid); if (!p) return;
+  var ms = p.milestones || [];
+  for (var i=0; i<ms.length; i++) { if (ms[i].id===mid) { ms[i].completed=checked; break; } }
+  p.updatedAt = new Date().toISOString();
+  saveProjects(projects); renderAll(); updateReminderBadge();
+}
+function findProject(id) {
+  for (var i=0; i<projects.length; i++) { if (projects[i].id===id) return projects[i]; }
+  return null;
+}
+
+// ===== Canvas Charts (Pure JS, no library) =====
+function renderDoughnutChart(canvasId, labels, data, colors) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  var container = canvas.parentElement;
+  var w = container.clientWidth;
+  var h = 320;
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  var total = 0;
+  for (var i=0; i<data.length; i++) total += data[i];
+  if (total === 0) {
+    ctx.fillStyle = '#a8988c';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('暂无数据', w/2, h/2);
+    return;
+  }
+
+  var cx = w / 2, cy = 130;
+  var outerR = Math.min(100, w/2 - 40);
+  var innerR = outerR * 0.6;
+  var startAngle = -Math.PI / 2;
+
+  for (var i2=0; i2<data.length; i2++) {
+    var sliceAngle = (data[i2] / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, startAngle, startAngle + sliceAngle);
+    ctx.arc(cx, cy, innerR, startAngle + sliceAngle, startAngle, true);
+    ctx.closePath();
+    ctx.fillStyle = colors[i2];
+    ctx.fill();
+    // White separator line
+    ctx.beginPath();
+    ctx.moveTo(cx + innerR * Math.cos(startAngle), cy + innerR * Math.sin(startAngle));
+    ctx.lineTo(cx + outerR * Math.cos(startAngle), cy + outerR * Math.sin(startAngle));
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    startAngle += sliceAngle;
+  }
+
+  // Center text
+  ctx.fillStyle = '#352c24';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(total + '', cx, cy - 4);
+  ctx.fillStyle = '#a8988c';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('个项目', cx, cy + 16);
+
+  // Legend
+  var legendY = 250;
+  var cols = Math.min(labels.length, 2);
+  for (var i3=0; i3<labels.length; i3++) {
+    var col = i3 % cols;
+    var row = Math.floor(i3 / cols);
+    var lx = 20 + col * (w / cols);
+    var ly = legendY + row * 24;
+    ctx.fillStyle = colors[i3];
+    ctx.fillRect(lx, ly - 5, 10, 10);
+    ctx.fillStyle = '#6b5c50';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(labels[i3] + ' (' + data[i3] + ')', lx + 16, ly + 4);
+  }
+}
+
+function renderBarChart(canvasId, labels, data, colors) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  var container = canvas.parentElement;
+  var w = container.clientWidth;
+  var barH = 26, gap = 10, topPad = 10, bottomPad = 20;
+  var totalH = labels.length * (barH + gap) + topPad + bottomPad;
+  totalH = Math.max(totalH, 200);
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr;
+  canvas.height = totalH * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = totalH + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  if (labels.length === 0) {
+    ctx.fillStyle = '#a8988c';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('暂无数据', w/2, totalH/2);
+    return;
+  }
+
+  var labelW = Math.min(150, w * 0.4);
+  var barMaxW = w - labelW - 60;
+  if (barMaxW < 50) barMaxW = 50;
+
+  for (var i=0; i<labels.length; i++) {
+    var y = topPad + i * (barH + gap);
+    // Label
+    var displayLabel = labels[i];
+    if (displayLabel.length > 12) displayLabel = displayLabel.slice(0,11) + '…';
+    ctx.fillStyle = '#6b5c50';
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(displayLabel, labelW - 8, y + barH/2 + 4);
+
+    // Bar bg
+    ctx.fillStyle = '#e8e2dc';
+    var rx = labelW + 4;
+    roundRect(ctx, rx, y, barMaxW, barH, 4);
+    ctx.fill();
+
+    // Bar fill
+    var barW = (data[i] / 100) * barMaxW;
+    if (barW < 2 && data[i] > 0) barW = 2;
+    ctx.fillStyle = colors[i];
+    roundRect(ctx, rx, y, barW, barH, 4);
+    ctx.fill();
+
+    // Percent text
+    ctx.fillStyle = '#352c24';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(data[i] + '%', rx + barW + 6, y + barH/2 + 4);
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h);
+  ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r);
+  ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+// ===== Render Stats View =====
+function renderStatsView() {
+  var statusCounts = {planning:0,'in-progress':0,completed:0,paused:0};
+  for (var i=0; i<projects.length; i++) {
+    var s = projects[i].status;
+    if (statusCounts.hasOwnProperty(s)) statusCounts[s]++;
+  }
+  var labels = ['规划中','进行中','已完成','已暂停'];
+  var keys = ['planning','in-progress','completed','paused'];
+  var colors = ['#5090c8','#f09830','#48b870','#a8988c'];
+  var chartLabels=[], chartData=[], chartColors=[];
+  for (var j=0; j<keys.length; j++) {
+    if (statusCounts[keys[j]] > 0) {
+      chartLabels.push(labels[j]);
+      chartData.push(statusCounts[keys[j]]);
+      chartColors.push(colors[j]);
+    }
+  }
+  renderDoughnutChart('statusChart', chartLabels, chartData, chartColors);
+
+  // Progress bar chart
+  var pNames=[], pProgress=[], pColors=[];
+  for (var k=0; k<projects.length; k++) {
+    var p = projects[k];
+    var name = (p.brand ? p.brand + ' · ' : '') + p.name;
+    var prog = calcProgress(p);
+    pNames.push(name);
+    pProgress.push(prog);
+    pColors.push(prog >= 80 ? '#48b870' : prog >= 40 ? '#e85d7a' : '#f09830');
+  }
+  renderBarChart('progressChart', pNames, pProgress, pColors);
+
+  renderTimeline();
+}
+
+// ===== Render Timeline =====
+function renderTimeline() {
+  var container = document.getElementById('timelineContent');
+  var allMs = [];
+  for (var i=0; i<projects.length; i++) {
+    var p = projects[i];
+    var milestones = p.milestones || [];
+    for (var j=0; j<milestones.length; j++) {
+      var m = milestones[j];
+      if (m.date) allMs.push({name:m.name,date:m.date,completed:m.completed,projectName:p.name,brand:p.brand,projectId:p.id});
+    }
+  }
+  allMs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+  var now = new Date(); now.setHours(0,0,0,0);
+  var upcoming = [];
+  for (var k=0; k<allMs.length; k++) {
+    if (new Date(allMs[k].date) >= now) upcoming.push(allMs[k]);
+  }
+  upcoming = upcoming.slice(0, 10);
+
+  if (upcoming.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray-400)">暂无即将到来的里程碑</div>';
+    return;
+  }
+  var html = '';
+  for (var u=0; u<upcoming.length; u++) {
+    var m2 = upcoming[u];
+    var cls = m2.completed ? 'done' : '';
+    html += '<div class="timeline-item '+cls+'"><div class="tl-date">'+m2.date+'</div><div class="tl-content"><div class="tl-name">'+escHtml(m2.name)+' '+(m2.completed?'✅':'')+'</div><div class="tl-project">'+escHtml(m2.brand)+' · '+escHtml(m2.projectName)+'</div></div></div>';
+  }
+  container.innerHTML = html;
+}
+
+// ===== Render All =====
+function renderAll() {
+  renderStatsBar();
+  if (currentView === 'table') renderTableView();
+  else renderStatsView();
+  updateReminderBadge();
+  // Refresh detail panel if open
+  if (selectedProjectId) renderProjectDetail(selectedProjectId);
+}
+function renderView() {
+  closeProjectDetail();
+  if (currentView === 'table') {
+    document.getElementById('tableView').style.display='block';
+    document.getElementById('statsView').classList.remove('active');
+    renderTableView();
+  } else {
+    document.getElementById('tableView').style.display='none';
+    document.getElementById('statsView').classList.add('active');
+    renderStatsView();
+  }
+  renderStatsBar();
+  updateReminderBadge();
+}
+
+// ===== View Toggle =====
+document.getElementById('viewToggle').addEventListener('click', function(e){
+  var btn = e.target.closest('button');
+  if (!btn) return;
+  currentView = btn.dataset.view;
+  var buttons = document.querySelectorAll('#viewToggle button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('active');
+  btn.classList.add('active');
+  renderView();
+});
+
+// ===== Modal =====
+function openProjectModal(projectId) {
+  editingId = projectId || null;
+  document.getElementById('projectModalOverlay').classList.add('active');
+  var deleteBtn = document.getElementById('modalDeleteBtn');
+  if (projectId) {
+    document.getElementById('modalTitle').textContent = '编辑项目';
+    deleteBtn.style.display = 'inline-flex';
+    var p = findProject(projectId);
+    if (p) populateForm(p);
+  } else {
+    document.getElementById('modalTitle').textContent = '新建项目';
+    deleteBtn.style.display = 'none';
+    resetForm();
+  }
+}
+function closeProjectModal() {
+  document.getElementById('projectModalOverlay').classList.remove('active');
+  editingId = null;
+}
+function populateForm(p) {
+  document.getElementById('projectId').value = p.id;
+  document.getElementById('brand').value = p.brand || '';
+  document.getElementById('name').value = p.name || '';
+  document.getElementById('status').value = p.status || 'planning';
+  document.getElementById('startDate').value = p.startDate || '';
+  document.getElementById('endDate').value = p.endDate || '';
+  document.getElementById('clientContact').value = p.clientContact || '';
+  document.getElementById('notes').innerHTML = p.notes || '';
+  // Todos
+  var todoList = document.getElementById('todoList');
+  todoList.innerHTML = '';
+  var todos = p.todos || [];
+  for (var i=0; i<todos.length; i++) { addTodoItem(todos[i].text, todos[i].completed, todos[i].id); }
+  // Milestones
+  var msList = document.getElementById('milestoneList');
+  msList.innerHTML = '';
+  var milestones = p.milestones || [];
+  for (var j=0; j<milestones.length; j++) { addMilestoneItem(milestones[j].name, milestones[j].date, milestones[j].completed, milestones[j].id); }
+}
+function resetForm() {
+  document.getElementById('projectId').value = '';
+  document.getElementById('brand').value = '';
+  document.getElementById('name').value = '';
+  document.getElementById('status').value = 'planning';
+  document.getElementById('startDate').value = '';
+  document.getElementById('endDate').value = '';
+  document.getElementById('clientContact').value = '';
+  document.getElementById('notes').innerHTML = '';
+  document.getElementById('todoList').innerHTML = '';
+  document.getElementById('milestoneList').innerHTML = '';
+}
+function collectFormData() {
+  var todoItems = document.querySelectorAll('#todoList .dynamic-item');
+  var todos = [];
+  for (var i=0; i<todoItems.length; i++) {
+    var item = todoItems[i];
+    var textInput = item.querySelector('.todo-text');
+    var checkbox = item.querySelector('.todo-check');
+    var idInput = item.querySelector('.item-id');
+    if (textInput && textInput.value.trim()) {
+      todos.push({id: idInput ? idInput.value : generateId(), text: textInput.value.trim(), completed: checkbox ? checkbox.checked : false});
+    }
+  }
+  var msItems = document.querySelectorAll('#milestoneList .dynamic-item');
+  var milestones = [];
+  for (var j=0; j<msItems.length; j++) {
+    var item2 = msItems[j];
+    var nameInput = item2.querySelector('.ms-name');
+    var dateInput = item2.querySelector('.ms-date');
+    var checkbox2 = item2.querySelector('.ms-check');
+    var idInput2 = item2.querySelector('.item-id');
+    if (nameInput && nameInput.value.trim()) {
+      milestones.push({id: idInput2 ? idInput2.value : generateId(), name: nameInput.value.trim(), date: dateInput ? dateInput.value : '', completed: checkbox2 ? checkbox2.checked : false});
+    }
+  }
+  return {
+    brand: document.getElementById('brand').value.trim(),
+    name: document.getElementById('name').value.trim(),
+    status: document.getElementById('status').value,
+    startDate: document.getElementById('startDate').value,
+    endDate: document.getElementById('endDate').value,
+    clientContact: document.getElementById('clientContact').value.trim(),
+    todos: todos, milestones: milestones,
+    notes: document.getElementById('notes').innerHTML.trim()
+  };
+}
+function saveProject() {
+  var data = collectFormData();
+  if (!data.name || !data.brand) { showToast('请至少填写项目品牌和项目名称', 'error'); return; }
+  var now = new Date().toISOString();
+  if (editingId) {
+    var p = findProject(editingId);
+    if (p) {
+      for (var key in data) { if (data.hasOwnProperty(key)) p[key] = data[key]; }
+      p.updatedAt = now;
+    }
+  } else {
+    data.id = generateId();
+    data.createdAt = now;
+    data.updatedAt = now;
+    projects.push(data);
+  }
+  saveProjects(projects);
+  closeProjectModal();
+  renderAll();
+  showToast(editingId ? '项目已更新 ✅' : '项目已创建 🎉', 'success');
+  editingId = null;
+}
+function editProjectById(id) { openProjectModal(id); }
+function deleteProjectFromModal() { if (editingId) confirmDelete(editingId); }
+function confirmDelete(id) {
+  var p = findProject(id);
+  if (!p) return;
+  showConfirm('确定要删除项目"' + p.name + '"吗？此操作不可恢复。', function(){
+    var newList = [];
+    for (var i=0; i<projects.length; i++) { if (projects[i].id !== id) newList.push(projects[i]); }
+    projects = newList;
+    saveProjects(projects);
+    closeProjectModal();
+    renderAll();
+    showToast('项目已删除', 'info');
+  });
+}
+function duplicateProject(id) {
+  var p = findProject(id);
+  if (!p) return;
+  var now = new Date().toISOString();
+  var clone = JSON.parse(JSON.stringify(p));
+  clone.id = generateId();
+  clone.name = (p.name || '') + ' (副本)';
+  clone.status = 'planning';
+  clone.createdAt = now;
+  clone.updatedAt = now;
+  var todos = clone.todos || [];
+  for (var i=0; i<todos.length; i++) { todos[i].id = generateId(); todos[i].completed = false; }
+  var milestones = clone.milestones || [];
+  for (var j=0; j<milestones.length; j++) { milestones[j].id = generateId(); milestones[j].completed = false; }
+  projects.push(clone);
+  saveProjects(projects);
+  renderAll();
+  showToast('项目已复制 📋', 'success');
+}
+
+// ===== Dynamic Form Items =====
+function addTodoItem(text, completed, id) {
+  var list = document.getElementById('todoList');
+  var div = document.createElement('div');
+  div.className = 'dynamic-item';
+  div.innerHTML = '<input type="hidden" class="item-id" value="'+(id||generateId())+'">'+
+    '<input type="checkbox" class="todo-check" '+(completed?'checked':'')+' style="cursor:pointer">'+
+    '<input type="text" class="todo-text" placeholder="输入待办事项..." value="'+escHtml(text||'')+'">'+
+    '<button type="button" class="remove-btn" onclick="this.closest(\'.dynamic-item\').remove()">×</button>';
+  list.appendChild(div);
+  div.querySelector('.todo-text').focus();
+}
+function addMilestoneItem(name, date, completed, id) {
+  var list = document.getElementById('milestoneList');
+  var div = document.createElement('div');
+  div.className = 'dynamic-item';
+  div.innerHTML = '<input type="hidden" class="item-id" value="'+(id||generateId())+'">'+
+    '<input type="checkbox" class="ms-check" '+(completed?'checked':'')+' style="cursor:pointer">'+
+    '<input type="text" class="ms-name" placeholder="里程碑名称..." value="'+escHtml(name||'')+'" style="flex:2">'+
+    '<input type="date" class="ms-date" value="'+(date||'')+'" style="flex:1.2">'+
+    '<button type="button" class="remove-btn" onclick="this.closest(\'.dynamic-item\').remove()">×</button>';
+  list.appendChild(div);
+  div.querySelector('.ms-name').focus();
+}
+
+// ===== Export / Import =====
+function exportJSON() {
+  downloadFile('project-tracker-backup.json', JSON.stringify(projects, null, 2), 'application/json');
+  showToast('JSON 导出成功 📤', 'success');
+}
+
+function exportXLSX() {
+  if (projects.length === 0) { showToast('没有数据可导出', 'error'); return; }
+  var statusLabels = {planning:'规划中','in-progress':'进行中',completed:'已完成',paused:'已暂停'};
+
+  // --- Sheet 1: 项目总览 ---
+  var h1 = ['项目品牌','项目名称','状态','进度(%)','开始日期','截止日期','客户对接人','待办总数','待办完成','里程碑总数','里程碑完成','备注'];
+  var rows1 = [];
+  for (var i=0; i<projects.length; i++) {
+    var p = projects[i];
+    var todos = p.todos || [];
+    var milestones = p.milestones || [];
+    rows1.push([
+      p.brand||'', p.name||'', statusLabels[p.status]||p.status, calcProgress(p),
+      p.startDate||'', p.endDate||'', p.clientContact||'',
+      todos.length, countDone(todos), milestones.length, countDone(milestones),
+      stripHtml(p.notes||'')
+    ]);
+  }
+
+  // --- Sheet 2: 里程碑明细 ---
+  var h2 = ['项目品牌','项目名称','里程碑名称','日期','已完成'];
+  var rows2 = [];
+  for (var i2=0; i2<projects.length; i2++) {
+    var p2 = projects[i2];
+    var ms2 = p2.milestones || [];
+    for (var j=0; j<ms2.length; j++) {
+      rows2.push([p2.brand||'', p2.name||'', ms2[j].name, ms2[j].date||'', ms2[j].completed?'是':'否']);
+    }
+  }
+
+  // --- Sheet 3: 待办明细 ---
+  var h3 = ['项目品牌','项目名称','待办事项','已完成'];
+  var rows3 = [];
+  for (var i3=0; i3<projects.length; i3++) {
+    var p3 = projects[i3];
+    var tds = p3.todos || [];
+    for (var k=0; k<tds.length; k++) {
+      rows3.push([p3.brand||'', p3.name||'', tds[k].text, tds[k].completed?'是':'否']);
+    }
+  }
+
+  // Build XLSX
+  var files = [
+    {name: '[Content_Types].xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+    {name: '_rels/.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name: 'xl/workbook.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="项目总览" sheetId="1" r:id="rId1"/><sheet name="里程碑明细" sheetId="2" r:id="rId2"/><sheet name="待办明细" sheetId="3" r:id="rId3"/></sheets></workbook>'},
+    {name: 'xl/_rels/workbook.xml.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+    {name: 'xl/styles.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Microsoft YaHei"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>'},
+    {name: 'xl/worksheets/sheet1.xml', data: buildSheetXML(h1, rows1)},
+    {name: 'xl/worksheets/sheet2.xml', data: buildSheetXML(h2, rows2)},
+    {name: 'xl/worksheets/sheet3.xml', data: buildSheetXML(h3, rows3)},
+  ];
+
+  var zip = buildZip(files);
+  var blob = new Blob([zip], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'project-tracker.xlsx';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('Excel 导出成功 📊', 'success');
+}
+
+function countDone(arr) {
+  var n=0; for (var i=0; i<arr.length; i++) { if (arr[i].completed) n++; }
+  return n;
+}
+
+function handleImport() { document.getElementById('importFileInput').click(); }
+function handleFileImport(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('格式错误');
+      if (data.length > 0 && !data[0].id) throw new Error('数据格式不匹配');
+      showConfirm('确定要导入 ' + data.length + ' 个项目吗？当前数据将被覆盖。', function(){
+        projects = data;
+        saveProjects(projects);
+        renderAll();
+        showToast('成功导入 ' + data.length + ' 个项目 📥', 'success');
+      });
+    } catch(err) { showToast('导入失败：文件格式不正确', 'error'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function downloadFile(filename, content, type) {
+  var blob = new Blob([content], {type: type});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===== Keyboard Shortcuts =====
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('confirmOverlay').classList.contains('active')) closeConfirm();
+    else if (document.getElementById('projectModalOverlay').classList.contains('active')) closeProjectModal();
+    else if (document.getElementById('detailPanel').classList.contains('active')) closeProjectDetail();
+    else if (document.getElementById('reminderPanel').classList.contains('active')) document.getElementById('reminderPanel').classList.remove('active');
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openProjectModal(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    if (document.getElementById('projectModalOverlay').classList.contains('active')) { e.preventDefault(); saveProject(); }
+  }
+});
+
+// Close modals on overlay click
+document.getElementById('projectModalOverlay').addEventListener('click', function(e) { if (e.target===e.currentTarget) closeProjectModal(); });
+document.getElementById('confirmOverlay').addEventListener('click', function(e) { if (e.target===e.currentTarget) closeConfirm(); });
+
+// ===== Rich Text Editor: Paste Image =====
+document.getElementById('notes').addEventListener('paste', function(e) {
+  var items = e.clipboardData.items;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      e.preventDefault();
+      var blob = items[i].getAsFile();
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var img = document.createElement('img');
+        img.src = ev.target.result;
+        img.style.maxWidth = '100%';
+        img.style.borderRadius = '8px';
+        img.style.margin = '6px 0';
+        img.style.display = 'block';
+        img.style.boxShadow = '0 2px 8px rgba(0,0,0,.1)';
+        // Insert at cursor position
+        var sel = window.getSelection();
+        if (sel.rangeCount > 0) {
+          var range = sel.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(img);
+          // Move cursor after image
+          range.setStartAfter(img);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } else {
+          document.getElementById('notes').appendChild(img);
+        }
+      };
+      reader.readAsDataURL(blob);
+      return;
+    }
+  }
+});
+
+// ===== Utility =====
+function escHtml(str) {
+  if (!str) return '';
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+function stripHtml(html) {
+  if (!html) return '';
+  var div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
+}
+
+// ===== XLSX Builder (纯 JS, 零依赖) =====
+var CRC32_TABLE = [];
+(function(){ for (var i=0;i<256;i++){ var c=i; for (var j=0;j<8;j++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); CRC32_TABLE[i]=c; } })();
+function crc32(bytes) { var c=0xFFFFFFFF; for (var i=0;i<bytes.length;i++) c=CRC32_TABLE[(c^bytes[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+
+function buildZip(files) {
+  // files: [{name: string, data: string}]
+  var encoder = new TextEncoder();
+  var parts = []; var cdParts = []; var offset = 0;
+  for (var i=0; i<files.length; i++) {
+    var nameBytes = encoder.encode(files[i].name);
+    var dataBytes = encoder.encode(files[i].data);
+    var crc = crc32(dataBytes);
+    var now = new Date(); var dosTime = (now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1);
+    var dosDate = ((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate();
+
+    // Local file header (30 bytes + filename)
+    var lh = new Uint8Array(30 + nameBytes.length + dataBytes.length);
+    var lv = new DataView(lh.buffer); var p = 0;
+    lv.setUint32(p, 0x04034b50, true); p+=4;
+    lv.setUint16(p, 20, true); p+=2;
+    lv.setUint16(p, 0x0800, true); p+=2; // UTF-8
+    lv.setUint16(p, 0, true); p+=2; // store
+    lv.setUint16(p, dosTime, true); p+=2;
+    lv.setUint16(p, dosDate, true); p+=2;
+    lv.setUint32(p, crc, true); p+=4;
+    lv.setUint32(p, dataBytes.length, true); p+=4;
+    lv.setUint32(p, dataBytes.length, true); p+=4;
+    lv.setUint16(p, nameBytes.length, true); p+=2;
+    lv.setUint16(p, 0, true); p+=2;
+    lh.set(nameBytes, 30); lh.set(dataBytes, 30 + nameBytes.length);
+    parts.push(lh);
+
+    // Central directory entry
+    var cd = new Uint8Array(46 + nameBytes.length);
+    var cv = new DataView(cd.buffer); p=0;
+    cv.setUint32(p, 0x02014b50, true); p+=4;
+    cv.setUint16(p, 20, true); p+=2; cv.setUint16(p, 20, true); p+=2;
+    cv.setUint16(p, 0x0800, true); p+=2; cv.setUint16(p, 0, true); p+=2;
+    cv.setUint16(p, dosTime, true); p+=2; cv.setUint16(p, dosDate, true); p+=2;
+    cv.setUint32(p, crc, true); p+=4; cv.setUint32(p, dataBytes.length, true); p+=4;
+    cv.setUint32(p, dataBytes.length, true); p+=4;
+    cv.setUint16(p, nameBytes.length, true); p+=2;
+    cv.setUint16(p, 0, true); p+=2; cv.setUint16(p, 0, true); p+=2;
+    cv.setUint16(p, 0, true); p+=2; cv.setUint16(p, 0, true); p+=2;
+    cv.setUint32(p, 0, true); p+=4;
+    cv.setUint32(p, offset, true); p+=4;
+    cd.set(nameBytes, 46); cdParts.push(cd);
+    offset += lh.length;
+  }
+  // Combine
+  var totalSize = 0; for (var i=0;i<parts.length;i++) totalSize+=parts[i].length;
+  var cdSize = 0; for (var i=0;i<cdParts.length;i++) cdSize+=cdParts[i].length;
+  var result = new Uint8Array(totalSize + cdSize + 22);
+  var pos = 0;
+  for (var i=0;i<parts.length;i++){ result.set(parts[i],pos); pos+=parts[i].length; }
+  var cdOffset = pos;
+  for (var i=0;i<cdParts.length;i++){ result.set(cdParts[i],pos); pos+=cdParts[i].length; }
+  // EOCD
+  var eocd = new DataView(result.buffer, pos, 22);
+  eocd.setUint32(0, 0x06054b50, true); eocd.setUint16(4,0,true); eocd.setUint16(6,0,true);
+  eocd.setUint16(8, files.length, true); eocd.setUint16(10, files.length, true);
+  eocd.setUint32(12, cdSize, true); eocd.setUint32(16, cdOffset, true); eocd.setUint16(20,0,true);
+  return result;
+}
+
+function xCol(n){ var s=''; while(n>=0){ s=String.fromCharCode(65+(n%26))+s; n=Math.floor(n/26)-1; } return s; }
+function xEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'&#10;'); }
+
+function buildSheetXML(headers, rows) {
+  var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  // Header row
+  xml += '<row r="1">';
+  for (var c=0; c<headers.length; c++) {
+    xml += '<c r="'+xCol(c)+'1" t="inlineStr"><is><t>'+xEsc(headers[c])+'</t></is></c>';
+  }
+  xml += '</row>';
+  // Data rows
+  for (var r=0; r<rows.length; r++) {
+    xml += '<row r="'+(r+2)+'">';
+    for (var c=0; c<rows[r].length; c++) {
+      var val = rows[r][c];
+      if (typeof val === 'number') {
+        xml += '<c r="'+xCol(c)+(r+2)+'"><v>'+val+'</v></c>';
+      } else {
+        xml += '<c r="'+xCol(c)+(r+2)+'" t="inlineStr"><is><t>'+xEsc(String(val))+'</t></is></c>';
+      }
+    }
+    xml += '</row>';
+  }
+  xml += '</sheetData></worksheet>';
+  return xml;
+}
+
+// ===== Browser Notifications =====
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+function checkAndNotify() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var reminders = getUpcomingMilestones();
+  var dismissed = getDismissed();
+  var active = [];
+  for (var i=0; i<reminders.length; i++) { if (!dismissed[reminders[i].key]) active.push(reminders[i]); }
+  var overdue = [];
+  for (var j=0; j<active.length; j++) { if (active[j].isOverdue) overdue.push(active[j]); }
+  if (overdue.length > 0 && overdue.length <= 5) {
+    for (var k=0; k<overdue.length; k++) {
+      try {
+        new Notification('⚠️ 项目逾期提醒', {body: overdue[k].brand + ' · ' + overdue[k].projectName + ' — ' + overdue[k].milestoneName, tag: overdue[k].key});
+      } catch(e) {}
+    }
+  }
+}
+
+// ===== Periodic Check =====
+setInterval(function() {
+  updateReminderBadge();
+  if (currentView === 'stats' && document.getElementById('statsView').classList.contains('active')) renderTimeline();
+  if (selectedProjectId && document.getElementById('detailPanel').classList.contains('active')) renderProjectDetail(selectedProjectId);
+}, 60000);
+
+// ===== Demo Data =====
+function addDemoDataIfEmpty() {
+  if (projects.length > 0) return;
+  var now = new Date();
+  function d(offset) { var dt=new Date(now); dt.setDate(dt.getDate()+offset); return dt.toISOString().split('T')[0]; }
+  projects = [
+    {
+      id: generateId(), brand: 'Nike', name: '2026 春季新品发布会', status: 'in-progress',
+      startDate: d(-30), endDate: d(15), clientContact: '张经理 / 13800138000',
+      todos: [
+        {id:generateId(),text:'场地确认',completed:true},{id:generateId(),text:'嘉宾邀请函设计',completed:true},
+        {id:generateId(),text:'媒体通稿撰写',completed:false},{id:generateId(),text:'现场布置方案确认',completed:false},
+        {id:generateId(),text:'活动复盘报告',completed:false}
+      ],
+      milestones: [
+        {id:generateId(),name:'方案确认',date:d(-20),completed:true},{id:generateId(),name:'物料到位',date:d(-5),completed:true},
+        {id:generateId(),name:'活动执行',date:d(14),completed:false},{id:generateId(),name:'复盘总结',date:d(20),completed:false}
+      ],
+      notes: '重点关注现场直播技术方案',
+      createdAt: new Date(Date.now()-30*86400000).toISOString(), updatedAt: new Date().toISOString()
+    },
+    {
+      id: generateId(), brand: 'Apple', name: 'Vision Pro 线下体验活动', status: 'planning',
+      startDate: d(10), endDate: d(45), clientContact: '李总监 / li@example.com',
+      todos: [
+        {id:generateId(),text:'体验流程设计',completed:false},{id:generateId(),text:'设备采购清单',completed:false},
+        {id:generateId(),text:'预约系统搭建',completed:false}
+      ],
+      milestones: [
+        {id:generateId(),name:'方案提案',date:d(5),completed:false},{id:generateId(),name:'设备到位',date:d(20),completed:false},
+        {id:generateId(),name:'试运行',date:d(35),completed:false}
+      ],
+      notes: '需协调Apple Store场地资源',
+      createdAt: new Date(Date.now()-7*86400000).toISOString(), updatedAt: new Date(Date.now()-2*86400000).toISOString()
+    },
+    {
+      id: generateId(), brand: '华为', name: 'Mate 80 系列媒体沟通会', status: 'completed',
+      startDate: d(-60), endDate: d(-5), clientContact: '王总 / wang@huawei.com',
+      todos: [
+        {id:generateId(),text:'媒体邀请',completed:true},{id:generateId(),text:'产品资料准备',completed:true},
+        {id:generateId(),text:'会场布置',completed:true},{id:generateId(),text:'会后报道追踪',completed:true}
+      ],
+      milestones: [
+        {id:generateId(),name:'媒体邀请发出',date:d(-50),completed:true},{id:generateId(),name:'沟通会执行',date:d(-7),completed:true},
+        {id:generateId(),name:'效果总结',date:d(-3),completed:true}
+      ],
+      notes: '媒体报道覆盖 50+ 媒体，效果超出预期',
+      createdAt: new Date(Date.now()-60*86400000).toISOString(), updatedAt: new Date(Date.now()-3*86400000).toISOString()
+    }
+  ];
+  saveProjects(projects);
+}
+
+// ===== Init =====
+function init() {
+  requestNotificationPermission();
+  renderAll();
+  setTimeout(checkAndNotify, 3000);
+  setInterval(checkAndNotify, 30*60*1000);
+  // Hide loading screen
+  setTimeout(function() {
+    document.getElementById('loadingScreen').classList.add('hidden');
+  }, 300);
+  console.log('📊 项目进度管理已就绪');
+  console.log('  快捷键: Ctrl+N 新建项目 | Esc 关闭弹窗 | Ctrl+S 保存');
+  console.log('  已加载 ' + projects.length + ' 个项目');
+}
+
+// Run
+addDemoDataIfEmpty();
+init();
+
+// Handle window resize for charts
+var resizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function() {
+    if (currentView === 'stats') renderStatsView();
+  }, 300);
+});
+</script>
+</body>
+</html>
